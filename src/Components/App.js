@@ -14,6 +14,7 @@ class App extends Component {
     selectedShow: "",
     episodes: [],
     filterByRating: "",
+    currentPage: 0
   }
 
   componentDidMount = () => {
@@ -24,30 +25,41 @@ class App extends Component {
     window.scrollTo(0, 0)
   }
 
-  handleSearch (e){
+  handleSearch = e => {
     this.setState({ searchTerm: e.target.value.toLowerCase() })
   }
 
-  handleFilter = (e) => {
-    e.target.value === "No Filter" ? this.setState({ filterRating:"" }) : this.setState({ filterRating: e.target.value})
+  handleFilter = e => {
+    e.target.value === "No Filter" ? 
+      this.setState({ filterByRating: "" }) : this.setState({ filterByRating: e.target.value })
   }
 
-  selectShow = (show) => {
+  selectShow = show => {
     Adapter.getShowEpisodes(show.id)
-    .then((episodes) => this.setState({
-      selectedShow: show,
-      episodes
-    }))
+      .then(episodes => this.setState({
+        selectedShow: show,
+        episodes
+      }))
   }
 
-  displayShows = () => {
-    if (this.state.filterByRating){
-      return this.state.shows.filter((s)=> {
-        return s.rating.average >= this.state.filterByRating
-      })
-    } else {
-      return this.state.shows
-    }
+  displayShows = () => (
+    this.state.filterByRating ? 
+      this.state.shows.filter(show => show.rating.average >= this.state.filterByRating)
+      :
+      this.state.shows
+  )
+
+  fetchMoreShows = () => {
+    this.setState(prevState => {
+      Adapter.getShows(prevState.currentPage + 1)
+        .then(shows => this.setState(prevState => ({
+          shows: prevState.shows.concat(shows)
+        })))
+      
+      return {
+        currentPage: prevState.currentPage + 1 
+      }
+    })
   }
 
   render (){
@@ -60,6 +72,7 @@ class App extends Component {
           </Grid.Column>
           <Grid.Column width={11}>
             <TVShowList shows={this.displayShows()} selectShow={this.selectShow} searchTerm={this.state.searchTerm}/>
+            <button onClick={this.fetchMoreShows}>Load More Shows</button>
           </Grid.Column>
         </Grid>
       </div>
